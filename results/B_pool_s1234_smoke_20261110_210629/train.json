@@ -1,0 +1,26 @@
+{
+ "run": "B_pool_s1234_smoke_20261110_210629",
+ "params": 117663192,
+ "gate_mode": "pool",
+ "seed": 1234,
+ "tok_s_mean": 26173.404720894814,
+ "tok_s_median": 26199.490359797524,
+ "tok_s_note": "mean over log records excluding the first (compile/warmup); includes restarts",
+ "mem_gb_max": 20.50588893890381,
+ "final_step": 30,
+ "final_train_loss": 9.198161125183105,
+ "elapsed_h_last_segment": 0.08770289566781786,
+ "evals": [
+  {
+   "step": 30,
+   "val": {
+    "dclm": 9.142799377441406,
+    "fineweb_edu": 9.14604377746582,
+    "wikipedia": 9.326330184936523,
+    "gutenberg": 8.750621795654297,
+    "cosmopedia": 9.26385498046875
+   },
+   "val_mean": 9.125930023193359
+  }
+ ]
+}

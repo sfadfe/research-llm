@@ -1,0 +1,40 @@
+{
+ "run": "okkie-transformer-117M_20261110_231751",
+ "arm": "B",
+ "gate_mode": "pool",
+ "seed": 1234,
+ "ckpt": "step_007629.pt",
+ "step": 7629,
+ "params": 117747864,
+ "params_pool_extra": 327432,
+ "val_loss": {
+  "dclm": 3.355874546368917,
+  "fineweb_edu": 3.1566623051961265,
+  "wikipedia": 2.74693984190623,
+  "gutenberg": 3.377474242990667,
+  "cosmopedia": 2.278807266553243
+ },
+ "val_ppl": {
+  "dclm": 28.670667057559218,
+  "fineweb_edu": 23.492055618218107,
+  "wikipedia": 15.594836126206602,
+  "gutenberg": 29.29668128811584,
+  "cosmopedia": 9.76502638725888
+ },
+ "val_mean_loss": 2.9831516406030367,
+ "val_tokens_per_source": {
+  "dclm": 983040,
+  "fineweb_edu": 983040,
+  "wikipedia": 983040,
+  "gutenberg": 1081344,
+  "cosmopedia": 983040
+ },
+ "tok_s_mean": 40669.02119819146,
+ "final_train_loss": 3.16241717338562,
+ "final_logged_val_mean": 3.004739856719971,
+ "eval_seconds": 93.17978048324585,
+ "eval_max_mem_gb": 1.8703861236572266,
+ "warnings": [],
+ "seq_len": 4096,
+ "train_seq_len": 2048
+}

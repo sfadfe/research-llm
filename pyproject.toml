@@ -1,0 +1,54 @@
+[project]
+name = "llm-project"
+version = "0.1.0"
+description = "LLM pretraining on 2x AMD Radeon AI PRO R9700 (gfx1201)"
+requires-python = "==3.12.*"
+dependencies = [
+    # ROCm nightly PyTorch, same builds as ~/venvs/rocm-nightly (used by ~/venvs/llm)
+    "torch[device-gfx1201]==2.12.0+rocm10.2.0a20261009",
+    "triton==3.8.0+git669b31ac.rocm10.2.0a20261009",
+    "amd-torch-device-gfx1201==2.12.0+rocm10.2.0a20261009",
+    "amd-torch-device-gfx12-0==2.12.0+rocm10.2.0a20261009",
+    "rocm[libraries]==10.2.0a20261009",
+    "rocm-sdk-core==10.2.0a20261009",
+    # 20261010 libs: hipBLASLt gfx1201 fp32 tables (rocm-libraries PR #12116)
+    "rocm-sdk-libraries==10.2.0a20261010",
+    "rocm-sdk-device-gfx1201==10.2.0a20261010",
+    "rocm-bootstrap==0.3.0",
+    # fla (Triton kernels); no causal-conv1d / flash-attn
+    "flash-linear-attention==0.6.0",
+    "fla-core==0.6.0",
+    "einops",
+    "numpy",
+    "tokenizers",
+    "pyarrow",
+    "datasets",
+    "huggingface-hub",
+    "safetensors",
+]
+
+[tool.uv]
+package = false
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
+override-dependencies = [
+    "torch==2.12.0+rocm10.2.0a20261009",
+    "triton==3.8.0+git669b31ac.rocm10.2.0a20261009",
+    "rocm-sdk-libraries==10.2.0a20261010",
+    "rocm-sdk-device-gfx1201==10.2.0a20261010",
+]
+
+[[tool.uv.index]]
+name = "amd-rocm-nightly"
+url = "https://nightly.repo.amd.com/rocm/whl-next/"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "amd-rocm-nightly" }
+triton = { index = "amd-rocm-nightly" }
+amd-torch-device-gfx1201 = { index = "amd-rocm-nightly" }
+amd-torch-device-gfx12-0 = { index = "amd-rocm-nightly" }
+rocm = { index = "amd-rocm-nightly" }
+rocm-sdk-core = { index = "amd-rocm-nightly" }
+rocm-sdk-libraries = { index = "amd-rocm-nightly" }
+rocm-sdk-device-gfx1201 = { index = "amd-rocm-nightly" }
+rocm-bootstrap = { index = "amd-rocm-nightly" }

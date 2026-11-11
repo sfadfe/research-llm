@@ -1,0 +1,56 @@
+[model]
+vocab_size = 32768
+d_model = 384
+n_layers = 7
+pattern = "G"
+mlp_hidden = 1024
+norm_eps = 1e-6
+gdn_heads = 6
+gdn_head_dim = 64
+conv_size = 4
+init_std = 0.02
+loss = "fused"
+gate_mode = "span"
+pool_chunk = 64
+pool_ckpt = true
+span_hidden = 256
+span_dim = 32
+span_h_short = 4.0
+span_h_long = 64.0
+span_threshold = 0.5
+span_max = 32
+mung_dim = 128
+span_top_n = 2
+span_m = 4
+
+[data]
+bin_dir = "data/switch"
+seq_len = 2048
+total_tokens = 500_000_000
+# Rows are 2048-token interleaved-context samples (switch data). doc_mask = false: no cu_seqlens, so the
+# recurrent state is reset only at the start of each 2048-token row, never at the EOT tokens inside a row.
+doc_mask = false
+seed = 1234
+
+[data.mix]
+switch = 1.0
+
+[train]
+run_name = "okkie-transformer-26m"
+micro_batch = 16
+global_batch = 64
+lr = 1.5e-3
+min_lr_ratio = 0.0
+warmup_steps = 250
+decay_frac = 0.2
+weight_decay = 0.1
+beta1 = 0.9
+beta2 = 0.95
+grad_clip = 1.0
+compile = true
+max_steps = 0
+log_every = 5
+eval_every = 250
+eval_batches = 16
+save_every = 250
+keep_every = 0

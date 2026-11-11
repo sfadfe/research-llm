@@ -1,0 +1,45 @@
+{
+ "run": "okkie-transformer-117M_20261110_231751",
+ "ckpt": "step_007629.pt",
+ "step": 7629,
+ "method": "val.bin rows of 32768+1 tokens at offsets i*32768, 8 rows/batch, doc mask as in training; loss = token-weighted mean of LM.forward's fused CE (same call as Train/train.py evaluate / old ppl.py); loss_tokenwise = mean of per-token CE recomputed from the final hidden state (used for position buckets)",
+ "per_source": {
+  "dclm": {
+   "loss": 3.343454202016195,
+   "ppl": 28.31676981219205,
+   "tokens": 786432,
+   "rows": 24,
+   "loss_tokenwise": 3.3434541466013843
+  },
+  "fineweb_edu": {
+   "loss": 3.1418418884277344,
+   "ppl": 23.146460818343982,
+   "tokens": 786432,
+   "rows": 24,
+   "loss_tokenwise": 3.1418416027411653
+  },
+  "wikipedia": {
+   "loss": 2.7552367051442466,
+   "ppl": 15.72476259451261,
+   "tokens": 786432,
+   "rows": 24,
+   "loss_tokenwise": 2.7552366027651183
+  },
+  "gutenberg": {
+   "loss": 3.3503153920173645,
+   "ppl": 28.511724596194373,
+   "tokens": 1048576,
+   "rows": 32,
+   "loss_tokenwise": 3.350315072507169
+  },
+  "cosmopedia": {
+   "loss": 2.2533205350240073,
+   "ppl": 9.51929255910801,
+   "tokens": 786432,
+   "rows": 24,
+   "loss_tokenwise": 2.2533201154960465
+  }
+ },
+ "val_mean": 2.96883374452591,
+ "max_batch_dev_tokenwise_vs_fused": 1.0178954994444211e-06
+}

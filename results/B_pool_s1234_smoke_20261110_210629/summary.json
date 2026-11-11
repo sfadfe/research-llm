@@ -1,0 +1,16 @@
+{
+ "run": "B_pool_s1234_smoke_20261110_210629",
+ "step": 30,
+ "gate_mode": "pool",
+ "seed": 1234,
+ "params": 117663192,
+ "val_mean_loss": 9.174969966029078,
+ "per_source_loss": {
+  "dclm": 9.188110457028937,
+  "fineweb_edu": 9.116944494227937,
+  "wikipedia": 9.325862530767646,
+  "gutenberg": 8.981752927155013,
+  "cosmopedia": 9.26217942096586
+ },
+ "tok_s_mean": 26173.404720894814
+}
