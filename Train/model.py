@@ -59,6 +59,7 @@ class ModelConfig:
     span_h_long: float = 64.0  # horizon of the long one
     span_threshold: float = 0.5  # theta: a span starts when cos(short, long) falls below theta
     span_max: int = 32  # span ids clamped to span_max - 1
+    span_max_len: int = 128  # a new span is forced span_max_len tokens after the last start (0 / None: off)
     mung_dim: int = 128  # per-head pooled [k; v] dim
     span_top_n: int = 2  # usable spans read through the restore layer
     span_m: int = 4  # (k, v) pairs per restored span

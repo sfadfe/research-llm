@@ -19,6 +19,7 @@ span_h_short = 4.0
 span_h_long = 64.0
 span_threshold = 0.5
 span_max = 32
+span_max_len = 128
 mung_dim = 128
 span_top_n = 2
 span_m = 4

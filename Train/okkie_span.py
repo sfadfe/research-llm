@@ -3,7 +3,8 @@
 # nn.Parameter, no nn.Linear: creating / initialising them never touches the global RNG, so shared params match
 # gate_mode = "linear" for the same seed). Per block:
 #   z_t = MLP(x_t) (H*span_dim), c_{t,h} = head piece.
-#   spans: s_t = cos(EMA_short(z), EMA_long(z)); new span at t when s_t < theta <= s_{t-1}; ids clamped to span_max-1.
+#   spans: s_t = cos(EMA_short(z), EMA_long(z)); new span at t when s_t < theta <= s_{t-1}, or span_max_len tokens
+#         after the last start; ids clamped to span_max-1.
 #   mung_{j,h} = mean_{i in span j} P_h [k_i; v_i] (P_h per head, (mung_dim, 2*Dh)); zbar_j = mean z over span j.
 #   read: usable spans = finished before t's span; sim = cos(z_t, zbar_j); top span_top_n usable -> restore
 #         (shared Linear mung -> span_m pairs (k~, v~)); other usable -> coarse (shared Linear mung -> one pair);
@@ -17,6 +18,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from fla.ops.gated_delta_rule import chunk_gated_delta_rule
+
+from span_triton import lifetime_gate_triton, span_read_triton, top_idx
 
 
 class DocLayout:
@@ -73,18 +76,52 @@ def ema(z, h):
     return W @ z
 
 
+def ema_chunk(z, h, C=64):
+    """Same as ema, chunked closed form: O(L C D) instead of O(L^2 D)."""
+    N, L, D = z.shape
+    ll = math.log1p(-1.0 / h)
+    nc = -(-L // C)
+    if nc * C != L:
+        z = F.pad(z, (0, 0, 0, nc * C - L))
+    i = torch.arange(C, device=z.device)
+    d = (i[:, None] - i[None, :]).float()
+    W = torch.exp(d.clamp(min=0) * ll).masked_fill(d < 0, 0.0)
+    intra = W @ z.view(N, nc, C, D)
+    j = torch.arange(nc, device=z.device)
+    dd = (j[:, None] - 1 - j[None, :]).float()
+    Wc = torch.exp(dd.clamp(min=0) * (C * ll)).masked_fill(dd < 0, 0.0)
+    carry = Wc @ intra[:, :, -1]
+    y = intra + torch.exp((i + 1).float() * ll)[:, None] * carry[:, :, None]
+    return y.view(N, nc * C, D)[:, :L]
+
+
 @torch.no_grad()
-def span_ids(z, h_short, h_long, theta, span_max, valid=None):
+def starts_to_ids(start, max_len=None):
+    """start (N,L) bool: threshold starts, column 0 False (position 0 always starts span 0). Unclamped ids (N,L)
+    long. max_len > 0: a span is also forced to start max_len tokens after the last start, i.e. the gap from a
+    threshold start p to the next one is cut into ceil(gap / max_len) spans. Causal: id_t uses start[:, :t+1]."""
+    if not max_len:
+        return start.long().cumsum(1)
+    t = torch.arange(start.shape[1], device=start.device)
+    p = torch.where(start, t, 0).cummax(1).values  # last threshold start <= t (0 if none)
+    p_prev = torch.cat([p.new_zeros(p.shape[0], 1), p[:, :-1]], 1)  # last threshold start < t
+    inc = torch.where(start & (t > 0), (t - p_prev + max_len - 1) // max_len, 0)  # spans of the closed gap
+    return inc.cumsum(1) + (t - p) // max_len
+
+
+@torch.no_grad()
+def span_ids(z, h_short, h_long, theta, span_max, valid=None, max_len=None):
     """Hard causal span ids (N,L) long from z (N,L,D). Position 0 starts span 0; a span starts at t >= 1 when
-    s_t < theta and s_{t-1} >= theta; ids >= span_max are clamped into span_max - 1."""
+    s_t < theta and s_{t-1} >= theta, or (max_len > 0) max_len tokens after the last start; ids >= span_max are
+    clamped into span_max - 1."""
     with torch.autocast("cuda", enabled=False), torch.autocast("cpu", enabled=False):
         z = z.float()
         if valid is not None:
             z = z * valid[..., None]
-        s = F.cosine_similarity(ema(z, h_short), ema(z, h_long), dim=-1, eps=1e-8)
+        s = F.cosine_similarity(ema_chunk(z, h_short), ema_chunk(z, h_long), dim=-1, eps=1e-8)
         start = (s[:, 1:] < theta) & (s[:, :-1] >= theta)
-        start = torch.cat([torch.zeros_like(start[:, :1]), start], 1)
-        return start.long().cumsum(1).clamp(max=span_max - 1), s
+        start = torch.cat([start.new_zeros(start.shape[0], 1), start], 1)
+        return starts_to_ids(start, max_len).clamp(max=span_max - 1), s
 
 
 def read_masks(sid, sim, top_n, S):
@@ -128,6 +165,36 @@ def lifetime_gate(c, g, beta, tau, bias, chunk):
     return torch.cat(ws, 1)
 
 
+class SpanSum(torch.autograd.Function):
+    """Sums of k and v over each span (oh (N,L,S) 0/1 bf16; k, v bf16 in, f32 out, no f32 copy of k / v).
+    Returns (N,S,H*Dh) x 2 f32; backward gathers the span gradient back to each token."""
+
+    @staticmethod
+    def forward(ctx, oh, sid, k, v):
+        N, L, H, D = k.shape
+        sk = torch.bmm(oh.transpose(1, 2), k.flatten(2), out_dtype=torch.float32)
+        sv = torch.bmm(oh.transpose(1, 2), v.flatten(2), out_dtype=torch.float32)
+        ctx.save_for_backward(sid)
+        ctx.shape, ctx.dt = (N, L, H, D), k.dtype
+        return sk, sv
+
+    @staticmethod
+    def backward(ctx, dk, dv):
+        (sid,) = ctx.saved_tensors
+        N, L, H, D = ctx.shape
+        idx = sid[..., None].expand(N, L, H * D)
+        return (None, None, torch.gather(dk, 1, idx).to(ctx.dt).view(N, L, H, D),
+                torch.gather(dv, 1, idx).to(ctx.dt).view(N, L, H, D))
+
+
+def combine(o, w, rho, o_read):
+    """Head output before o_norm: w o_delta + rho_h o_read."""
+    return (o.float() * w[..., None] + rho.float()[:, None] * o_read).to(o.dtype)
+
+
+combine_compiled = torch.compile(combine, dynamic=False)
+
+
 class OkkieSpan(nn.Module):
     def __init__(self, c, H, Dh):
         super().__init__()
@@ -136,6 +203,7 @@ class OkkieSpan(nn.Module):
         self.h_short, self.h_long, self.theta = c.span_h_short, c.span_h_long, c.span_threshold
         self.S, self.top_n, self.m, self.chunk = c.span_max, c.span_top_n, c.span_m, c.pool_chunk
         self.ckpt = c.pool_ckpt
+        self.max_len = c.span_max_len
         self.z_w1 = nn.Parameter(torch.empty(self.hidden, c.d_model))
         self.z_w2 = nn.Parameter(torch.empty(H * self.P, self.hidden))
         self.mung_w = nn.Parameter(torch.empty(H * self.R, 2 * Dh))  # per head: P_h = mung_w.view(H, R, 2Dh)[h]
@@ -174,28 +242,41 @@ class OkkieSpan(nn.Module):
             beta = torch.sigmoid(b.float())
             zd = lay.to_doc(zf)
             N, L = zd.shape[:2]
-            sid, _ = span_ids(zd, self.h_short, self.h_long, self.theta, self.S, lay.valid)
-            w = lay.from_doc(lifetime_gate(zd.view(N, L, H, self.P), lay.to_doc(g), lay.to_doc(beta),
-                                           self.tau.float(), self.gate_b.float(), self.chunk))
-            # spans: means as one-hot matmuls (static S), mung = P_h applied to the mean of [k; v]
-            oh = F.one_hot(sid, self.S).float()
-            if lay.valid is not None:
-                oh = oh * lay.valid[..., None]
-            oh = oh / oh.sum(1, keepdim=True).clamp(min=1)
-            kv = lay.to_doc(torch.cat([k, v], -1).float())
-            mung = torch.einsum("nshd,hrd->nshr", torch.einsum("nls,nlhd->nshd", oh, kv),
-                                self.mung_w.float().view(H, self.R, 2 * Dh))
-            with torch.no_grad():
-                zbar = torch.einsum("nls,nld->nsd", oh, zd)
-                sim = torch.einsum("nld,nsd->nls", F.normalize(zd, dim=-1, eps=1e-8),
-                                   F.normalize(zbar, dim=-1, eps=1e-8))
-                high, low = read_masks(sid, sim, self.top_n, self.S)
-            args = (lay.to_doc(q.float()), mung, high, low, self.restore_w.float(), self.coarse_w.float(),
-                    self.read_log_scale.float(), self.m)
-            if self.ckpt and torch.is_grad_enabled():
-                o_read = torch.utils.checkpoint.checkpoint(span_read, *args, use_reentrant=False)
+            sid, _ = span_ids(zd, self.h_short, self.h_long, self.theta, self.S, lay.valid, self.max_len)
+            w = lay.from_doc(lifetime_gate_triton(zd.view(N, L, H, self.P), lay.to_doc(g), lay.to_doc(beta),
+                                                  self.tau.float(), self.gate_b.float(), self.chunk))
+            S = int(sid.max()) + 1  # host sync: only spans 0..S-1 occur in this batch
+            high = low = None
+            if S == 1:
+                # no usable span anywhere: o_read = 0 exactly; read params get exact zero grads
+                zero = (self.restore_w.sum() + self.coarse_w.sum() + self.read_log_scale.sum() +
+                        self.mung_w.sum()) * 0.0
+                o_read = zero.expand(N, L, H, Dh)
+                if self.record:
+                    high = low = torch.zeros(N, L, 1, dtype=torch.bool, device=x.device)
             else:
-                o_read = span_read(*args)
+                # spans: means as one-hot matmuls, mung = P_h applied to the mean of [k; v]
+                oh = F.one_hot(sid, S)
+                if lay.valid is not None:
+                    oh = oh * lay.valid[..., None]
+                cnt = oh.sum(1).float().clamp(min=1)  # (N,S)
+                ohn = oh.float() / cnt[:, None]
+                if lay.kind == "id" and k.dtype == torch.bfloat16:
+                    sk, sv = SpanSum.apply(oh.to(torch.bfloat16), sid, k, v)
+                    kvm = torch.stack([(sk / cnt[..., None]).view(N, S, H, Dh),
+                                       (sv / cnt[..., None]).view(N, S, H, Dh)], 3).flatten(-2)
+                else:
+                    kvm = torch.einsum("nls,nlhd->nshd", ohn, lay.to_doc(torch.cat([k, v], -1).float()))
+                mung = torch.einsum("nshd,hrd->nshr", kvm, self.mung_w.float().view(H, self.R, 2 * Dh))
+                with torch.no_grad():
+                    zbar = torch.einsum("nls,nld->nsd", ohn, zd)
+                    sim = torch.einsum("nld,nsd->nls", F.normalize(zd, dim=-1, eps=1e-8),
+                                       F.normalize(zbar, dim=-1, eps=1e-8))
+                    if self.record:
+                        high, low = read_masks(sid, sim, self.top_n, S)
+                    top = top_idx(sid, sim, self.top_n, S)
+                o_read = span_read_triton(lay.to_doc(q), mung, sid, top, self.restore_w.float(),
+                                          self.coarse_w.float(), self.read_log_scale.float(), self.m)
             o_read = lay.from_doc(o_read)
         if p.record_gate:
             p.last_gate.update(a=a.detach(), b=b.detach(), s=None, w=w.detach())
@@ -210,6 +291,6 @@ class OkkieSpan(nn.Module):
             cu_seqlens=cu,
             cu_seqlens_cpu=cu_cpu,
         )
-        o = (o.float() * w[..., None] + self.rho.float()[:, None] * o_read).to(o.dtype)
+        o = combine_compiled(o, w, self.rho, o_read)
         o = p.o_norm(o, p.g_proj(x).unflatten(-1, (H, Dh)))
         return p.o_proj(o.flatten(-2))
