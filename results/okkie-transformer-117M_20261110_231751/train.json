@@ -1,0 +1,209 @@
+{
+ "run": "okkie-transformer-117M_20261110_231751",
+ "params": {
+  "total": 117747864,
+  "embedding_tied": 25165824,
+  "non_embedding": 92582040,
+  "gate_params_by_name": {
+   "ab": 110592,
+   "ab_c": 13824,
+   "c_proj": 294912,
+   "c_norm": 192,
+   "score_w": 18432,
+   "gamma_raw": 72,
+   "A_log": 72,
+   "dt_bias": 72
+  },
+  "pool_extra": 327432
+ },
+ "log": "/home/r97002way/research-llm/model/okkie-transformer-117M_20261110_231751/log.jsonl",
+ "tok_s_mean": 40669.02119819146,
+ "tok_s_median": 40689.786082641614,
+ "tok_s_note": "mean/median of log records' tok_s, excluding the first record after start and after each restart (compile/warmup); eval time is not included in tok_s (train.py resets its timer after eval)",
+ "tok_s_records": 1525,
+ "restarts": 0,
+ "mem_gb_max": 19.528348445892334,
+ "tflops_gpu_mean_steady": 28.73214226234659,
+ "final_step": 7629,
+ "final_train_loss": 3.16241717338562,
+ "final_train_loss_mean_last10": 3.1643910646438598,
+ "elapsed_h_last_segment": 13.754401157564587,
+ "val_curve": [
+  {
+   "step": 500,
+   "val": {
+    "dclm": 4.5611138343811035,
+    "fineweb_edu": 4.459230899810791,
+    "wikipedia": 4.273585319519043,
+    "gutenberg": 4.488813877105713,
+    "cosmopedia": 3.894476890563965
+   },
+   "val_mean": 4.335444164276123
+  },
+  {
+   "step": 1000,
+   "val": {
+    "dclm": 4.021477222442627,
+    "fineweb_edu": 3.8481898307800293,
+    "wikipedia": 3.5126352310180664,
+    "gutenberg": 4.038311004638672,
+    "cosmopedia": 3.1494362354278564
+   },
+   "val_mean": 3.71400990486145
+  },
+  {
+   "step": 1500,
+   "val": {
+    "dclm": 3.8469574451446533,
+    "fineweb_edu": 3.662122964859009,
+    "wikipedia": 3.3137199878692627,
+    "gutenberg": 3.867894411087036,
+    "cosmopedia": 2.9161901473999023
+   },
+   "val_mean": 3.5213769912719726
+  },
+  {
+   "step": 2000,
+   "val": {
+    "dclm": 3.75272536277771,
+    "fineweb_edu": 3.562839984893799,
+    "wikipedia": 3.2030720710754395,
+    "gutenberg": 3.781398296356201,
+    "cosmopedia": 2.7929530143737793
+   },
+   "val_mean": 3.4185977458953856
+  },
+  {
+   "step": 2500,
+   "val": {
+    "dclm": 3.6888909339904785,
+    "fineweb_edu": 3.4980344772338867,
+    "wikipedia": 3.135275363922119,
+    "gutenberg": 3.7239551544189453,
+    "cosmopedia": 2.707872152328491
+   },
+   "val_mean": 3.3508056163787843
+  },
+  {
+   "step": 3000,
+   "val": {
+    "dclm": 3.6460320949554443,
+    "fineweb_edu": 3.4550867080688477,
+    "wikipedia": 3.0816917419433594,
+    "gutenberg": 3.675137519836426,
+    "cosmopedia": 2.654388427734375
+   },
+   "val_mean": 3.3024672985076906
+  },
+  {
+   "step": 3500,
+   "val": {
+    "dclm": 3.6089210510253906,
+    "fineweb_edu": 3.4167442321777344,
+    "wikipedia": 3.0463335514068604,
+    "gutenberg": 3.6457719802856445,
+    "cosmopedia": 2.6080844402313232
+   },
+   "val_mean": 3.2651710510253906
+  },
+  {
+   "step": 4000,
+   "val": {
+    "dclm": 3.582176446914673,
+    "fineweb_edu": 3.387601852416992,
+    "wikipedia": 3.0179283618927,
+    "gutenberg": 3.6165928840637207,
+    "cosmopedia": 2.569840669631958
+   },
+   "val_mean": 3.2348280429840086
+  },
+  {
+   "step": 4500,
+   "val": {
+    "dclm": 3.56034779548645,
+    "fineweb_edu": 3.3649208545684814,
+    "wikipedia": 2.9903085231781006,
+    "gutenberg": 3.5890963077545166,
+    "cosmopedia": 2.5383503437042236
+   },
+   "val_mean": 3.2086047649383547
+  },
+  {
+   "step": 5000,
+   "val": {
+    "dclm": 3.5357627868652344,
+    "fineweb_edu": 3.3492588996887207,
+    "wikipedia": 2.9661519527435303,
+    "gutenberg": 3.5704097747802734,
+    "cosmopedia": 2.514816999435425
+   },
+   "val_mean": 3.1872800827026366
+  },
+  {
+   "step": 5500,
+   "val": {
+    "dclm": 3.5224685668945312,
+    "fineweb_edu": 3.3355765342712402,
+    "wikipedia": 2.952699899673462,
+    "gutenberg": 3.554818868637085,
+    "cosmopedia": 2.496950149536133
+   },
+   "val_mean": 3.17250280380249
+  },
+  {
+   "step": 6000,
+   "val": {
+    "dclm": 3.506800651550293,
+    "fineweb_edu": 3.3134546279907227,
+    "wikipedia": 2.9382476806640625,
+    "gutenberg": 3.5428688526153564,
+    "cosmopedia": 2.4773991107940674
+   },
+   "val_mean": 3.1557541847229005
+  },
+  {
+   "step": 6500,
+   "val": {
+    "dclm": 3.467015027999878,
+    "fineweb_edu": 3.2727761268615723,
+    "wikipedia": 2.8931074142456055,
+    "gutenberg": 3.5044593811035156,
+    "cosmopedia": 2.425746202468872
+   },
+   "val_mean": 3.1126208305358887
+  },
+  {
+   "step": 7000,
+   "val": {
+    "dclm": 3.4181456565856934,
+    "fineweb_edu": 3.223148822784424,
+    "wikipedia": 2.836517333984375,
+    "gutenberg": 3.448726177215576,
+    "cosmopedia": 2.3568761348724365
+   },
+   "val_mean": 3.056682825088501
+  },
+  {
+   "step": 7500,
+   "val": {
+    "dclm": 3.375047206878662,
+    "fineweb_edu": 3.17999005317688,
+    "wikipedia": 2.788517713546753,
+    "gutenberg": 3.4049153327941895,
+    "cosmopedia": 2.3024868965148926
+   },
+   "val_mean": 3.0101914405822754
+  },
+  {
+   "step": 7629,
+   "val": {
+    "dclm": 3.3699333667755127,
+    "fineweb_edu": 3.1753194332122803,
+    "wikipedia": 2.7834596633911133,
+    "gutenberg": 3.3992462158203125,
+    "cosmopedia": 2.2957406044006348
+   },
+   "val_mean": 3.004739856719971
+  }
+ ]
+}

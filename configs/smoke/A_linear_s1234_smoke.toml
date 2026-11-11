@@ -1,0 +1,52 @@
+[model]
+vocab_size = 32768
+d_model = 768
+n_layers = 12
+pattern = "G"
+mlp_hidden = 2048
+norm_eps = 1e-6
+gdn_heads = 6
+gdn_head_dim = 128
+conv_size = 4
+init_std = 0.02
+loss = "fused"
+gate_mode = "linear"
+pool_chunk = 64
+pool_ckpt = true
+pool_h_min = 4.0
+pool_h_max = 256.0
+score_bound = 10.0
+
+[data]
+bin_dir = "data/bin"
+seq_len = 2048
+total_tokens = 2_000_000_000
+doc_mask = true
+seed = 1234
+
+[data.mix]
+dclm = 0.45
+fineweb_edu = 0.25
+wikipedia = 0.10
+gutenberg = 0.10
+cosmopedia = 0.10
+
+[train]
+run_name = "A_linear_s1234_smoke"
+micro_batch = 16
+global_batch = 128
+lr = 1e-3
+min_lr_ratio = 0.0
+warmup_steps = 500
+decay_frac = 0.2
+weight_decay = 0.1
+beta1 = 0.9
+beta2 = 0.95
+grad_clip = 1.0
+compile = true
+max_steps = 30
+log_every = 1
+eval_every = 30
+eval_batches = 2
+save_every = 30
+keep_every = 0

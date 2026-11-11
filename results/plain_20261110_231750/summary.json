@@ -1,0 +1,38 @@
+{
+ "run": "plain_20261110_231750",
+ "arm": "A",
+ "gate_mode": "linear",
+ "seed": 1234,
+ "ckpt": "step_007629.pt",
+ "step": 7629,
+ "params": 117420432,
+ "params_pool_extra": 0,
+ "val_loss": {
+  "dclm": 3.3741582768862366,
+  "fineweb_edu": 3.1769806752439407,
+  "wikipedia": 2.7664832853880084,
+  "gutenberg": 3.4028531168446396,
+  "cosmopedia": 2.2983489740090293
+ },
+ "val_ppl": {
+  "dclm": 29.199695375859395,
+  "fineweb_edu": 23.974258092504087,
+  "wikipedia": 15.90261061526751,
+  "gutenberg": 30.049713200064495,
+  "cosmopedia": 9.957728407111
+ },
+ "val_mean_loss": 3.0037648656743707,
+ "val_tokens_per_source": {
+  "dclm": 999424,
+  "fineweb_edu": 999424,
+  "wikipedia": 999424,
+  "gutenberg": 1081344,
+  "cosmopedia": 999424
+ },
+ "tok_s_mean": 43738.9670797144,
+ "final_train_loss": 3.1640422344207764,
+ "final_logged_val_mean": 3.0064043045043944,
+ "eval_seconds": 69.1858160495758,
+ "eval_max_mem_gb": 1.8408970832824707,
+ "warnings": []
+}
